@@ -1,6 +1,6 @@
 # FCN_ggml
 
-A **Fully Connected Neural Network (FCN)** implementation using the [GGML](https://github.com/ggerganov/ggml) library with support for both CPU and CUDA backends. 
+A **Fully Connected Neural Network (FCN)** for diabetes prediction implementation using the [GGML](https://github.com/ggerganov/ggml) library with support for both CPU and CUDA backends. 
 
 ## Overview
 
@@ -45,16 +45,6 @@ cd FCN_ggml
 2. Ensure GGML is installed and accessible in your include/library paths
 
 3.  Compile the program: 
-
-**For CPU only:**
-```bash
-g++ -o fnn fnn.cpp -lggml -lggml-backend -lggml-cpu -lm
-```
-
-**For CUDA support:**
-```bash
-g++ -o fnn fnn.cpp -lggml -lggml-backend -lggml-cpu -lggml-cuda -lm -DGGML_USE_CUDA
-```
 
 ## Usage
 
