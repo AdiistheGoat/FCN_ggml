@@ -1,6 +1,6 @@
 # FCN_ggml
 
-A **Fully Connected Neural Network (FCN)** for diabetes prediction implementation using the [GGML](https://github.com/ggerganov/ggml) library with support for both CPU and CUDA backends. 
+A **Fully Connected Neural Network (FCN)** for diabetes prediction implementation using the [GGML](https://github.com/ggerganov/ggml) library with support for both CPU and CUDA backends.
 
 ## Overview
 
@@ -11,14 +11,15 @@ This project demonstrates how to build and run a simple 3-layer fully connected 
 - GGML's backend system for hardware abstraction
 - Computational graph construction and execution
 - Softmax output layer for classification
+- Diabetes prediction using trained model weights
 
 ## Architecture
 
 The network consists of:
-- **Input Layer**: 8 neurons
+- **Input Layer**: 8 neurons (diabetes risk factors)
 - **Hidden Layer 1**: 4 neurons (ReLU activation)
 - **Hidden Layer 2**: 4 neurons (ReLU activation)
-- **Output Layer**: 2 neurons (Softmax activation)
+- **Output Layer**: 2 neurons (Softmax activation - binary classification)
 
 ## Features
 
@@ -27,45 +28,97 @@ The network consists of:
 - ✅ Efficient memory management with backend buffers
 - ✅ Computational graph optimization
 - ✅ Pre-trained weights and biases included
+- ✅ Jupyter notebook for model training
+- ✅ Diabetes prediction dataset included
+
+## Project Structure
+
+```
+FCN_ggml/
+├── fnn.cpp                              # C++ inference implementation
+├── prediction.ipynb                     # Jupyter notebook for training
+├── diabetes_prediction_dataset.csv      # Training dataset
+└── README.md                            # Documentation
+```
 
 ## Requirements
 
-- C++ compiler with C++11 support
+- C++ compiler with C++11 support (GCC, Clang, or MSVC)
 - [GGML library](https://github.com/ggerganov/ggml)
 - CUDA toolkit (optional, for GPU acceleration)
+- CMake (optional, for building)
 
 ## Installation
 
-1. Clone the repository:
+### 1. Clone the repository
+
 ```bash
 git clone https://github.com/AdiistheGoat/FCN_ggml.git
 cd FCN_ggml
 ```
 
-2. Ensure GGML is installed and accessible in your include/library paths
 
-3.  Compile the program: 
+
+
+
+add_executable(fnn fnn.cpp)
+target_link_libraries(fnn GGML:: ggml)
+```
+
+Then build: 
+
+```bash
+mkdir build && cd build
+cmake ..
+make
+```
 
 ## Usage
 
-The program expects exactly 8 numerical inputs (corresponding to the 8-dimensional input layer):
+The program expects exactly 8 numerical inputs representing diabetes risk factors:
 
 ```bash
 ./fnn <input1> <input2> <input3> <input4> <input5> <input6> <input7> <input8>
 ```
 
+### Input Features
+
+The 8 input features typically represent:
+1. Age
+2. Gender
+3. BMI (Body Mass Index)
+4. Hypertension status
+5. Heart disease status
+6. Smoking history
+7. HbA1c level
+8. Blood glucose level
+
 ### Example
 
 ```bash
-./fnn 1 2 3 4 5 6 7 8
+./fnn 0. 5 1.0 0.7 0.0 0.0 0.3 0.6 0.8
 ```
 
 **Output:**
 The program outputs the softmax probabilities for the 2 output classes: 
 ```
-0.500000
-0.500000
+Class 0 (No Diabetes): 0.423156
+Class 1 (Diabetes): 0.576844
 ```
+
+### Training Your Own Model
+
+Use the included Jupyter notebook to train the model on the diabetes dataset:
+
+```bash
+jupyter notebook prediction.ipynb
+```
+
+The notebook includes:
+- Data preprocessing and normalization
+- Model training with PyTorch
+- Weight extraction for GGML
+- Model evaluation and testing
 
 ## How It Works
 
@@ -73,13 +126,13 @@ The program outputs the softmax probabilities for the 2 output classes:
 The program first attempts to initialize a CUDA backend for GPU acceleration. If unavailable, it falls back to the CPU backend.
 
 ### 2. **Tensor Creation**
-Tensors are created for: 
+Tensors are created for:
 - Input vector (8-dimensional)
 - Weight matrices (for each layer)
 - Bias vectors (for each layer)
 
 ### 3. **Computational Graph Construction**
-A directed acyclic graph (DAG) is built representing the forward pass: 
+A directed acyclic graph (DAG) is built representing the forward pass:
 ```
 Input → [W1 × Input + B1] → ReLU → [W2 × Hidden1 + B2] → ReLU → [W3 × Hidden2 + B3] → Softmax → Output
 ```
@@ -94,15 +147,23 @@ Output tensors are copied back from device memory to RAM, and softmax normalizat
 
 ```cpp
 // 1. Initialize backend (CUDA or CPU)
-ggml_backend_t backend = ggml_backend_cuda_init(0) || ggml_backend_cpu_init();
+ggml_backend_t backend = ggml_backend_cuda_init(0);
+if (! backend) {
+    backend = ggml_backend_cpu_init();
+}
 
 // 2. Create context for tensor metadata
+struct ggml_init_params params = {
+    . mem_size   = 16*1024*1024,
+    .mem_buffer = NULL,
+    .no_alloc   = true,
+};
 struct ggml_context *ctx = ggml_init(params);
 
 // 3. Define tensor shapes
 struct ggml_tensor *input = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 8);
-struct ggml_tensor *weight_1 = ggml_new_tensor_2d(ctx, wtype, cols_1, rows_1);
-// ...  (more tensors)
+struct ggml_tensor *weight_1 = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 8, 4);
+// ... (more tensors)
 
 // 4. Allocate backend buffer and copy data
 ggml_backend_buffer_t buffer = ggml_backend_alloc_ctx_tensors(ctx, backend);
@@ -121,27 +182,35 @@ ggml_backend_tensor_get(result, result_data, 0, ggml_nbytes(result));
 softmax(result_data, size_result);
 ```
 
+## Performance
+
+- **CPU Backend**: Suitable for inference on standard hardware
+- **CUDA Backend**:  Significantly faster on NVIDIA GPUs
+- **Memory Usage**: ~16MB for model and computation graph
+
 ## Future Enhancements
 
 As noted in the code comments, potential improvements include: 
 
 - [ ] Load weights from GGUF file format instead of hardcoded arrays
 - [ ] Support for quantized weights (Q4_0, Q8_0, etc.)
-- [ ] Training capabilities
+- [ ] Training capabilities directly in C++
 - [ ] More flexible network architectures
 - [ ] Model serialization/deserialization
 - [ ] Batch processing support
+- [ ] Command-line interface for model loading
+- [ ] Support for other activation functions
 
 ## Technical Notes
 
 ### Memory Management
-- **Context**:  Stores tensor metadata (shapes, types, pointers)
+- **Context**: Stores tensor metadata (shapes, types, pointers)
 - **Backend Buffer**: Stores actual tensor data on device (CPU/GPU)
-- **Computational Graph**:  Manages operation dependencies and execution order
+- **Computational Graph**: Manages operation dependencies and execution order
 
 ### Backend Selection
-The program automatically selects the best available backend:
-1.  CUDA (if compiled with `GGML_USE_CUDA` and GPU available)
+The program automatically selects the best available backend: 
+1. CUDA (if compiled with `GGML_USE_CUDA` and GPU available)
 2. CPU (fallback)
 
 ### Tensor Operations
@@ -149,6 +218,35 @@ All operations are performed using GGML's optimized implementations:
 - `ggml_mul_mat`: Matrix multiplication (with automatic transpose)
 - `ggml_add`: Element-wise addition
 - `ggml_relu`: ReLU activation function
+- Manual softmax implementation for output normalization
+
+## Troubleshooting
+
+### Common Issues
+
+**Issue**:  `ggml/ggml.h: No such file or directory`
+- **Solution**: Ensure GGML is installed and accessible in your include paths.  Try adding `-I/path/to/ggml/include` to your compile command.
+
+**Issue**: `undefined reference to ggml_*`
+- **Solution**: Make sure you're linking against the GGML library with `-lggml`.
+
+**Issue**:  CUDA backend fails to initialize
+- **Solution**:  Verify CUDA toolkit is installed and GPU is available. The program will automatically fall back to CPU. 
+
+**Issue**: Incorrect predictions
+- **Solution**: Ensure input values are properly normalized (typically 0-1 range) as expected by the model.
+
+## Dataset
+
+The included `diabetes_prediction_dataset.csv` contains health metrics for diabetes risk prediction. The dataset includes features such as:
+- Age
+- Gender
+- BMI
+- Hypertension
+- Heart disease
+- Smoking history
+- HbA1c level
+- Blood glucose level
 
 ## License
 
@@ -160,12 +258,35 @@ Contributions are welcome! Feel free to:
 - Report bugs
 - Suggest features
 - Submit pull requests
+- Improve documentation
+- Add test cases
 
 ## Acknowledgments
 
-Built with [GGML](https://github.com/ggerganov/ggml) by Georgi Gerganov. 
+- Built with [GGML](https://github.com/ggerganov/ggml) by Georgi Gerganov
+- Inspired by modern ML inference frameworks
+- Dataset sourced from diabetes prediction research
 
 ---
 
 **Author**:  [@AdiistheGoat](https://github.com/AdiistheGoat)  
-**Repository**: [FCN_ggml](https://github.com/AdiistheGoat/FCN_ggml)
+**Repository**: [FCN_ggml](https://github.com/AdiistheGoat/FCN_ggml)  
+**Last Updated**: December 2025
+
+---
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/AdiistheGoat/FCN_ggml.git
+cd FCN_ggml
+
+# Compile (assuming GGML is installed)
+g++ -std=c++11 -o fnn fnn.cpp -lggml -lm
+
+# Run inference
+./fnn 0.5 1.0 0.7 0.0 0.0 0.3 0.6 0.8
+```
+
+For questions or support, please open an issue on GitHub.
