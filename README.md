@@ -48,30 +48,6 @@ FCN_ggml/
 - CUDA toolkit (optional, for GPU acceleration)
 - CMake (optional, for building)
 
-## Installation
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/AdiistheGoat/FCN_ggml.git
-cd FCN_ggml
-```
-
-
-
-
-
-add_executable(fnn fnn.cpp)
-target_link_libraries(fnn GGML:: ggml)
-```
-
-Then build: 
-
-```bash
-mkdir build && cd build
-cmake ..
-make
-```
 
 ## Usage
 
@@ -194,11 +170,6 @@ As noted in the code comments, potential improvements include:
 
 - [ ] Load weights from GGUF file format instead of hardcoded arrays
 - [ ] Support for quantized weights (Q4_0, Q8_0, etc.)
-- [ ] Training capabilities directly in C++
-- [ ] More flexible network architectures
-- [ ] Model serialization/deserialization
-- [ ] Batch processing support
-- [ ] Command-line interface for model loading
 - [ ] Support for other activation functions
 
 ## Technical Notes
@@ -208,10 +179,6 @@ As noted in the code comments, potential improvements include:
 - **Backend Buffer**: Stores actual tensor data on device (CPU/GPU)
 - **Computational Graph**: Manages operation dependencies and execution order
 
-### Backend Selection
-The program automatically selects the best available backend: 
-1. CUDA (if compiled with `GGML_USE_CUDA` and GPU available)
-2. CPU (fallback)
 
 ### Tensor Operations
 All operations are performed using GGML's optimized implementations:
@@ -220,21 +187,6 @@ All operations are performed using GGML's optimized implementations:
 - `ggml_relu`: ReLU activation function
 - Manual softmax implementation for output normalization
 
-## Troubleshooting
-
-### Common Issues
-
-**Issue**:  `ggml/ggml.h: No such file or directory`
-- **Solution**: Ensure GGML is installed and accessible in your include paths.  Try adding `-I/path/to/ggml/include` to your compile command.
-
-**Issue**: `undefined reference to ggml_*`
-- **Solution**: Make sure you're linking against the GGML library with `-lggml`.
-
-**Issue**:  CUDA backend fails to initialize
-- **Solution**:  Verify CUDA toolkit is installed and GPU is available. The program will automatically fall back to CPU. 
-
-**Issue**: Incorrect predictions
-- **Solution**: Ensure input values are properly normalized (typically 0-1 range) as expected by the model.
 
 ## Dataset
 
@@ -273,20 +225,5 @@ Contributions are welcome! Feel free to:
 **Repository**: [FCN_ggml](https://github.com/AdiistheGoat/FCN_ggml)  
 **Last Updated**: December 2025
 
----
-
-## Quick Start
-
-```bash
-# Clone the repository
-git clone https://github.com/AdiistheGoat/FCN_ggml.git
-cd FCN_ggml
-
-# Compile (assuming GGML is installed)
-g++ -std=c++11 -o fnn fnn.cpp -lggml -lm
-
-# Run inference
-./fnn 0.5 1.0 0.7 0.0 0.0 0.3 0.6 0.8
-```
 
 For questions or support, please open an issue on GitHub.
